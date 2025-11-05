@@ -204,21 +204,30 @@ function imgui.OnDrawFrame()
         imgui.SameLine()
         imgui.BeginChild('##right', imgui.ImVec2(500, 300), true)
         if menu == 1 then
-            imgui.Text(u8'Набросал вам хуйни, чтоб легче было играть.')
-            imgui.Text(u8'Автор этого скрипта - Ваш покорный слуга SAKUTA!')
-            imgui.Link("https://vk.com/amaraythenerp",u8'AMARAYTHEN ВО ВКОНТАКТЕ!')
-            imgui.Link("https://vk.com/hentaikazz",u8'SAKUTA')
-            imgui.TextColoredRGB('Спасибо за пользование {525497}Amaraythen Helper{FFFFFF})')
-            imgui.Text(u8'Текущая версия: '..thisScript().version..u8' Последняя версия для обновления '..updateversion)
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.TextColoredRGB('                              Спасибо за пользование {525497}Amaraythen Helper{FFFFFF})')
+            imgui.Text(u8'                 Текущая версия: '..thisScript().version..u8' Последняя версия для обновления '..updateversion)
             if updateversion ~= thisScript().version then 
-                imgui.Text(u8'Требуется обновление!')
+                imgui.Text(u8'                                          Требуется обновление!')
                 imgui.SameLine()
                 if imgui.Button(u8'Обновить до версии '..updateversion) then 
-                    autoupdate("", '['..string.upper(thisScript().name)..']: ', "https://vk.com/amaraythenerp")
+                    autoupdate("https://raw.githubusercontent.com/HentaikaZ/amaraythen/refs/heads/main/autoupdate.json", '['..string.upper(thisScript().name)..']: ', "https://vk.com/amaraythenerp")
                 end
             else 
-                imgui.Text(u8'Обновление не требуется')
+                imgui.Text(u8'                                          Обновление не требуется')
             end
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Text(u8'')
+            imgui.Link("https://vk.com/hentaikazz",u8'SAKUTA')
+            imgui.Text(u8'')
+            imgui.Link("https://vk.com/amaraythenerp",u8'AMARAYTHEN ВО ВКОНТАКТЕ!')
         end
         if menu == 2 then
             if imgui.Checkbox('##Sbiv', checksbiv) then
@@ -535,7 +544,7 @@ function imgui.OnDrawFrame()
         imgui.Text(u8("АВТОР"))
         imgui.SameLine(95)
         imgui.SetCursorPosY(imgui.GetCursorPosY()-3)
-        imgui.Button("VRush", imgui.ImVec2(50, 25))
+        imgui.Button("SAKUTA", imgui.ImVec2(50, 25))
         imgui.NewLine()
         imgui.SameLine(15)
         imgui.SetCursorPosY(imgui.GetCursorPosY()+3.5)
@@ -547,6 +556,9 @@ function imgui.OnDrawFrame()
         imgui.SameLine() 
         imgui.BeginChild("right_info", imgui.ImVec2(500, 70), false)
         imgui.SetCursorPosY(imgui.GetCursorPosY()+10)
+        if imgui.Button(u8'Закрыть меню', imgui.ImVec2(-1, 25)) then
+            window.v = false
+        end
         if imgui.Button(u8'Перезагрузить скрипт', imgui.ImVec2(-1, 25)) then lua_thread.create(function() reload = true window.v = false imgui.ShowCursor = false msg('Скрипт был принудительно перезагружен') wait(50) thisScript():reload() end) end
         if imgui.Button(u8'Сбросить настройки', imgui.ImVec2(-1, 25)) then 
             msg('Настройки были сборошены до состояние "По умолчанию"')
@@ -554,13 +566,13 @@ function imgui.OnDrawFrame()
             msg('Скрипт был принудительно перезагружен') 
             window.v = true
             thisScript():reload()
-        end
+        end 
         imgui.EndChild()
         imgui.End()
     end
     if window_v.v then
         imgui.SetNextWindowPos(imgui.ImVec2(350.0, 250.0), imgui.Cond.FirstUseEver)
-        imgui.Begin('Window Title', window_v,imgui.WindowFlags.AlwaysAutoResize)
+        imgui.Begin(u8'Привет Сучка! :)', window_v,imgui.WindowFlags.AlwaysAutoResize)
         imgui.BeginChild('##left', imgui.ImVec2(550, 130), true)
         imgui.TextColoredRGB('Спасибо за пользование {525497}Ghetto Helper')
         imgui.Text(u8'Автор этого скрипта VRush')
@@ -576,6 +588,8 @@ function imgui.OnDrawFrame()
         imgui.End()
     end
 end
+
+-- ПОД КЛЮЧ
 
 function autoupdate(json_url, prefix, url)
     lua_thread.create(function()
@@ -666,7 +680,7 @@ function main()
         end)
         msg('Загружен! Автор SAKUTA. Открыть меню: /'..cfg.config.CommandAct)         
         if cfg.config.AutoUpdate == 1 then
-            autoupdate("-", '['..string.upper(thisScript().name)..']: ', "https://vk.com/amaraythenerp")
+            autoupdate("https://raw.githubusercontent.com/HentaikaZ/amaraythen/refs/heads/main/autoupdate.json", '['..string.upper(thisScript().name)..']: ', "https://vk.com/amaraythenerp")
         elseif cfg.config.AutoUpdate == 2 then
             msg('Автообновление было выключено, проверьте обновление в Главном меню')
         end
