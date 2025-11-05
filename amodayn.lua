@@ -5,6 +5,8 @@ script_author('SAKUTA')
 --==--libs--==--
 require 'moonloader'
 local imgui = require 'imgui'
+local json = require 'dkjson'
+local requests = require 'requests'
 local imadd = require 'imgui_addons'
 imgui.ToggleButton = require('imgui_addons').ToggleButton
 local imadd = require("imgui_addons")
@@ -17,6 +19,8 @@ encoding.default = 'CP1251'
 u8 = encoding.UTF8
 local fa = require 'faIcons'
 local fonts = renderCreateFont("Arial", 9, 5)
+
+local authorized = false
 
 local cfg = inicfg.load({
    config = {
@@ -74,39 +78,41 @@ local font = renderCreateFont("Arial", cfg.config.SizeFont, cfg.config.FlagFont)
 
 
 --==--Imgui--==--
-local window = imgui.ImBool(false)
-local window_v = imgui.ImBool(false)
-local checksbiv = imgui.ImBool(cfg.config.SbivBind)
-local checkdtimer = imgui.ImBool(cfg.config.DrugTimer)
-local checkbell = imgui.ImBool(cfg.config.Bell)
-local checkkill = imgui.ImBool(cfg.config.Kill)
-local nepocaz = imgui.ImBool(cfg.config.mainwin)
-local ComboStyle = imgui.ImInt(cfg.config.Styles)
-local ComboNabor = imgui.ImInt(cfg.config.NaborBang)
-local checkinvite = imgui.ImBool(cfg.config.Invite)
-local invrank = imgui.ImInt(cfg.config.InvRank)
-local checkuninvite = imgui.ImBool(cfg.config.UnInvite)
-local uvaltext = imgui.ImBuffer(cfg.config.UvalText,256)
-local checkspawncar = imgui.ImBool(cfg.config.SpawnCar)
-local checknabor = imgui.ImBool(cfg.config.Nabor)
-local checkstats = imgui.ImBool(cfg.config.Stats)
-local checkhphud = imgui.ImBool(cfg.config.HPHud)
-local checksklad = imgui.ImBool(cfg.config.Sklad)
-local checkonline = imgui.ImBool(cfg.config.CheckOnline)
-local radioautoupdate = imgui.ImInt(cfg.config.AutoUpdate)
-local commandact = imgui.ImBuffer(cfg.config.CommandAct,256)
-local sizefont = imgui.ImInt(cfg.config.SizeFont)
-local flagfont = imgui.ImInt(cfg.config.FlagFont)
-local enbgrove = imgui.ImBool(cfg.config.OnlineGrove)
-local enbballas = imgui.ImBool(cfg.config.OnlineBallas)
-local enbvagos = imgui.ImBool(cfg.config.OnlineVagos)
-local enbaztec = imgui.ImBool(cfg.config.OnlineAztec)
-local enbrifa = imgui.ImBool(cfg.config.OnlineRifa)
-local cmdmb = imgui.ImBool(cfg.config.CmdMb)
-local cmdde = imgui.ImBool(cfg.config.CmdDe)
-local cmdm4 = imgui.ImBool(cfg.config.CmdM4)
-local formuval = imgui.ImBool(cfg.config.formuval)
-local textsbiv = imgui.ImBuffer(cfg.config.TextSbiv,256)
+local ui = {
+    window = imgui.ImBool(false),
+    window_v = imgui.ImBool(false),
+    checksbiv = imgui.ImBool(cfg.config.SbivBind),
+    checkdtimer = imgui.ImBool(cfg.config.DrugTimer),
+    checkbell = imgui.ImBool(cfg.config.Bell),
+    checkkill = imgui.ImBool(cfg.config.Kill),
+    nepocaz = imgui.ImBool(cfg.config.mainwin),
+    ComboStyle = imgui.ImInt(cfg.config.Styles),
+    ComboNabor = imgui.ImInt(cfg.config.NaborBang),
+    checkinvite = imgui.ImBool(cfg.config.Invite),
+    invrank = imgui.ImInt(cfg.config.InvRank),
+    checkuninvite = imgui.ImBool(cfg.config.UnInvite),
+    uvaltext = imgui.ImBuffer(cfg.config.UvalText,256),
+    checkspawncar = imgui.ImBool(cfg.config.SpawnCar),
+    checknabor = imgui.ImBool(cfg.config.Nabor),
+    checkstats = imgui.ImBool(cfg.config.Stats),
+    checkhphud = imgui.ImBool(cfg.config.HPHud),
+    checksklad = imgui.ImBool(cfg.config.Sklad),
+    checkonline = imgui.ImBool(cfg.config.CheckOnline),
+    radioautoupdate = imgui.ImInt(cfg.config.AutoUpdate),
+    commandact = imgui.ImBuffer(cfg.config.CommandAct,256),
+    sizefont = imgui.ImInt(cfg.config.SizeFont),
+    flagfont = imgui.ImInt(cfg.config.FlagFont),
+    enbgrove = imgui.ImBool(cfg.config.OnlineGrove),
+    enbballas = imgui.ImBool(cfg.config.OnlineBallas),
+    enbvagos = imgui.ImBool(cfg.config.OnlineVagos),
+    enbaztec = imgui.ImBool(cfg.config.OnlineAztec),
+    enbrifa = imgui.ImBool(cfg.config.OnlineRifa),
+    cmdmb = imgui.ImBool(cfg.config.CmdMb),
+    cmdde = imgui.ImBool(cfg.config.CmdDe),
+    cmdm4 = imgui.ImBool(cfg.config.CmdM4),
+    formuval = imgui.ImBool(cfg.config.formuval),
+    textsbiv = imgui.ImBuffer(cfg.config.TextSbiv,256),
+}
 
 --==--Local--==--
 local Timer = {state = false, start = 0}
@@ -149,11 +155,11 @@ oaztec = 0
 local fa_font = nil
 local fontsize = nil
 local menuk = {
-	fa.ICON_INFO..u8' Информация',
-	fa.ICON_BARS..u8' Функции',
-	fa.ICON_ID_CARD..u8' Для 9+ рангов',
-	fa.ICON_TERMINAL..u8' Команды',
-	fa.ICON_COGS..u8' Настройки',
+    fa.ICON_INFO..u8' Информация',
+    fa.ICON_BARS..u8' Функции',
+    fa.ICON_ID_CARD..u8' Для 9+ рангов',
+    fa.ICON_TERMINAL..u8' Команды',
+    fa.ICON_COGS..u8' Настройки',
 }
 local dead_players = {}
 local tLastKeys = {}
@@ -182,10 +188,94 @@ function neakBtn(...)
     return result
 end
 
+function getCPUSerial()
+    -- Проверяем существование файла с серийником
+    local serial_path = getWorkingDirectory()..'/config/Amaraythen/cpu_serial.txt'
+    if doesFileExist(serial_path) then
+        local f = io.open(serial_path, 'r')
+        if f then
+            local serial = f:read('*a')
+            f:close()
+            if serial and #serial > 0 then
+                return serial:upper()
+            end
+        end
+    end
+
+    -- Если файла нет или он пустой - получаем серийник CPU
+    local pipe = io.popen('wmic cpu get ProcessorId 2>nul')
+    if not pipe then return nil end
+    local out = pipe:read('*a')
+    pipe:close()
+    if not out then return nil end
+    
+    local id = out:match('(%w+)')
+    if id and #id > 0 then
+        -- Сохраняем серийник в файл
+        if not doesDirectoryExist('moonloader/config/Amaraythen') then 
+            createDirectory('moonloader/config/Amaraythen')
+        end
+        local f = io.open(serial_path, 'w')
+        if f then
+            f:write(id:upper())
+            f:close()
+        end
+        return id:upper()
+    end
+    return nil
+end
+
+function checkSerialFromGithub()
+    local cpu = getCPUSerial()
+    if not cpu then 
+        msg('Не удалось получить серийный номер CPU')
+        return false 
+    end
+
+    -- Проверяем локально сохраненный серийник
+    local serial_path = getWorkingDirectory()..'/config/Amaraythen/cpu_serial.txt'
+    if doesFileExist(serial_path) then
+        local f = io.open(serial_path, 'r')
+        if f then
+            local saved_serial = f:read('*a')
+            f:close()
+            if saved_serial and saved_serial:upper() == cpu then
+                return true
+            end
+        end
+    end
+
+    -- Если локальная проверка не прошла - проверяем через GitHub
+    local url = "https://github.com/HentaikaZ/amaraythen/raw/refs/heads/main/allowed_serials.json"
+    local ok, response = pcall(requests.get, url)
+    if not ok or not response or response.status_code ~= 200 then
+        return false
+    end
+    
+    local decoded, pos, err = json.decode(response.text)
+    if not decoded or type(decoded.allowed_serials) ~= 'table' then
+        return false
+    end
+
+    cpu = cpu:upper()
+    for _, v in ipairs(decoded.allowed_serials) do
+        if type(v) == 'string' and cpu == v:upper() then
+            -- Сохраняем подтвержденный серийник
+            local f = io.open(serial_path, 'w')
+            if f then
+                f:write(cpu)
+                f:close()
+            end
+            return true
+        end
+    end
+    return false
+end
+
 function imgui.OnDrawFrame()
-    if window.v then
+    if ui.window.v then
         imgui.SetNextWindowPos(imgui.ImVec2(350,300), imgui.Cond.FirstUseEver)
-        imgui.Begin('Amaraythen Helper by SAKUTA', window, imgui.WindowFlags.NoTitleBar, imgui.WindowFlags.AlwaysAutoResize)
+        imgui.Begin('Amaraythen Helper by SAKUTA', ui.window, imgui.WindowFlags.NoTitleBar, imgui.WindowFlags.AlwaysAutoResize)
         imgui.BeginChild('##left', imgui.ImVec2(150, 300), true)
         for k, v in ipairs(menuk) do
             if menu ~= k then  
@@ -199,7 +289,7 @@ function imgui.OnDrawFrame()
                     menun = u8:decode(menuk[k])
                 end
             end
-		end
+        end
         imgui.EndChild()
         imgui.SameLine()
         imgui.BeginChild('##right', imgui.ImVec2(500, 300), true)
@@ -230,8 +320,8 @@ function imgui.OnDrawFrame()
             imgui.Link("https://vk.com/amaraythenerp",u8'AMARAYTHEN ВО ВКОНТАКТЕ!')
         end
         if menu == 2 then
-            if imgui.Checkbox('##Sbiv', checksbiv) then
-                cfg.config.SbivBind = checksbiv.v
+            if imgui.Checkbox('##Sbiv', ui.checksbiv) then
+                cfg.config.SbivBind = ui.checksbiv.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -249,15 +339,15 @@ function imgui.OnDrawFrame()
                 imgui.PushItemWidth(90)
                 imgui.Text(u8'Сообщение для сбива: ')
                 imgui.SameLine()
-                if imgui.InputText(u8'', textsbiv) then
-                    cfg.config.TextSbiv = textsbiv.v
+                if imgui.InputText(u8'', ui.textsbiv) then
+                    cfg.config.TextSbiv = ui.textsbiv.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox('##DrugTimer', checkdtimer) then
-                cfg.config.DrugTimer = checkdtimer.v
+            if imgui.Checkbox('##DrugTimer', ui.checkdtimer) then
+                cfg.config.DrugTimer = ui.checkdtimer.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -269,8 +359,8 @@ function imgui.OnDrawFrame()
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox('##bell', checkbell) then
-                cfg.config.Bell = checkbell.v
+            if imgui.Checkbox('##bell', ui.checkbell) then
+                cfg.config.Bell = ui.checkbell.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -282,8 +372,8 @@ function imgui.OnDrawFrame()
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox('##kill', checkkill) then
-                cfg.config.Kill = checkkill.v
+            if imgui.Checkbox('##kill', ui.checkkill) then
+                cfg.config.Kill = ui.checkkill.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -295,8 +385,8 @@ function imgui.OnDrawFrame()
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox('##stats', checkstats) then
-                cfg.config.Stats = checkstats.v
+            if imgui.Checkbox('##stats', ui.checkstats) then
+                cfg.config.Stats = ui.checkstats.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -308,7 +398,7 @@ function imgui.OnDrawFrame()
                 if imgui.Button(u8'Изменить позицию##s') then 
                     changestatspos = true             
                     msg('Нажмите ЛКМ чтобы сохранить позицию.') 
-                    window.v = false
+                    ui.window.v = false
                 end
                 if imgui.Button(u8'Обнулить') then
                     total,deaths,kills = 0, 0, 0
@@ -317,25 +407,25 @@ function imgui.OnDrawFrame()
                 imgui.SameLine()
                 imgui.Ques('После смены размера перезагрузите скрипт')
                 imgui.SameLine()
-                if imgui.InputInt('##size', sizefont) then
+                if imgui.InputInt('##size', ui.sizefont) then
                     local font = renderCreateFont("Arial", cfg.config.SizeFont, cfg.config.FlagFont)
-                    cfg.config.SizeFont = sizefont.v
+                    cfg.config.SizeFont = ui.sizefont.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.Text(u8'Флаг шрифта')
                 imgui.SameLine()
                 imgui.Ques('После смены флага перезагрузите скрипт')
                 imgui.SameLine()
-                if imgui.InputInt('##flag', flagfont) then
+                if imgui.InputInt('##flag', ui.flagfont) then
                     local font = renderCreateFont("Arial", cfg.config.SizeFont, cfg.config.FlagFont)
-                    cfg.config.FlagFont = flagfont.v
+                    cfg.config.FlagFont = ui.flagfont.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox('##checkonline', checkonline) then
-                cfg.config.CheckOnline = checkonline.v
+            if imgui.Checkbox('##checkonline', ui.checkonline) then
+                cfg.config.CheckOnline = ui.checkonline.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -347,28 +437,28 @@ function imgui.OnDrawFrame()
                 if imgui.Button(u8'Изменить пoзицию##sa') then 
                     changecheckonlinepos = true             
                     msg('Нажмите ЛКМ чтобы сохранить позицию.') 
-                    window.v = false
+                    ui.window.v = false
                 end
                 imgui.Text(u8'Изменить отображение банд:')
                 imgui.Text(u8'Grove')
                 imgui.SameLine()
-                if imgui.Checkbox('##Grove', enbgrove) then cfg.config.OnlineGrove = enbgrove.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
+                if imgui.Checkbox('##Grove', ui.enbgrove) then cfg.config.OnlineGrove = ui.enbgrove.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
                 imgui.Text(u8'Ballas')
                 imgui.SameLine()
-                if imgui.Checkbox('##Ballas', enbballas) then cfg.config.OnlineBallas = enbballas.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
+                if imgui.Checkbox('##Ballas', ui.enbballas) then cfg.config.OnlineBallas = ui.enbballas.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
                 imgui.Text(u8'Los Santos Vagos')
                 imgui.SameLine()
-                if imgui.Checkbox('##Vagos', enbvagos) then cfg.config.OnlineVagos = enbvagos.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
+                if imgui.Checkbox('##Vagos', ui.enbvagos) then cfg.config.OnlineVagos = ui.enbvagos.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
                 imgui.Text(u8'Varrios Los Aztecaz')
                 imgui.SameLine()
-                if imgui.Checkbox('##Aztec', enbaztec) then cfg.config.OnlineAztec = enbaztec.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
+                if imgui.Checkbox('##Aztec', ui.enbaztec) then cfg.config.OnlineAztec = ui.enbaztec.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
                 imgui.Text(u8'Rifa')
                 imgui.SameLine()
-                if imgui.Checkbox('##Rifa', enbrifa) then cfg.config.OnlineRifa = enbrifa.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
+                if imgui.Checkbox('##Rifa', ui.enbrifa) then cfg.config.OnlineRifa = ui.enbrifa.v inicfg.save(cfg,'Amaraythen/Amaraythen.ini') end
                 imgui.EndPopup()
             end
-            if imgui.Checkbox('##hphud', checkhphud) then
-                cfg.config.HPHud = checkhphud.v
+            if imgui.Checkbox('##hphud', ui.checkhphud) then
+                cfg.config.HPHud = ui.checkhphud.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -381,8 +471,8 @@ function imgui.OnDrawFrame()
             end
         end
         if menu == 3 then
-            if imgui.Checkbox(u8'##inv', checkinvite) then
-                cfg.config.Invite = checkinvite.v
+            if imgui.Checkbox(u8'##inv', ui.checkinvite) then
+                cfg.config.Invite = ui.checkinvite.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -392,17 +482,17 @@ function imgui.OnDrawFrame()
             if imgui.Button(fa.ICON_COGS) then imgui.OpenPopup(u8'inv') end
             if imgui.BeginPopup(u8'inv') then
                 imgui.Text(u8'Автоматически будет отправлять инвайт с РП отыгровкой. Активация: ПКМ + 1')
-                if imgui.InputInt(u8'Ранг при инвайте', invrank) then
-                    cfg.config.InvRank = invrank.v
+                if imgui.InputInt(u8'Ранг при инвайте', ui.invrank) then
+                    cfg.config.InvRank = ui.invrank.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
-                if invrank.v <= 0 or invrank.v >= 9 then
-                    invrank.v = 1
+                if ui.invrank.v <= 0 or ui.invrank.v >= 9 then
+                    ui.invrank.v = 1
                 end
                 imgui.EndPopup()
             end
-            if imgui.Checkbox(u8'##uval', checkuninvite) then
-                cfg.config.UnInvite = checkuninvite.v
+            if imgui.Checkbox(u8'##uval', ui.checkuninvite) then
+                cfg.config.UnInvite = ui.checkuninvite.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -412,14 +502,14 @@ function imgui.OnDrawFrame()
             if imgui.Button(fa.ICON_COGS..'##7') then imgui.OpenPopup(u8'uval') end
             if imgui.BeginPopup(u8'uval') then
                 imgui.Text(u8'Быстрое увольнение члена банды. Активация: /fu [ID]')
-                if imgui.InputText(u8'Причина увольнения', uvaltext) then
-                    cfg.config.UnInviteText = uvaltext.v
+                if imgui.InputText(u8'Причина увольнения', ui.uvaltext) then
+                    cfg.config.UnInviteText = ui.uvaltext.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.EndPopup()
             end
-            if imgui.Checkbox(u8'##formuval', formuval) then
-                cfg.config.formuval = formuval.v
+            if imgui.Checkbox(u8'##formuval', ui.formuval) then
+                cfg.config.formuval = ui.formuval.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -428,15 +518,15 @@ function imgui.OnDrawFrame()
             if imgui.Button(fa.ICON_COGS..'##10') then imgui.OpenPopup(u8'forluval') end
             if imgui.BeginPopup(u8'forluval') then
                 imgui.Text(u8'При сообщениях по типу "псж" "увал" будет выводится форма для увольнения.')
-                if imgui.InputText(u8'Причина увольнения#11', uvaltext) then
-                    cfg.config.UnInviteText = uvaltext.v
+                if imgui.InputText(u8'Причина увольнения#11', ui.uvaltext) then
+                    cfg.config.UnInviteText = ui.uvaltext.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.EndPopup()
             end
 
-            if imgui.Checkbox(u8'##scar', checkspawncar) then
-                cfg.config.SpawnCar = checkspawncar.v
+            if imgui.Checkbox(u8'##scar', ui.checkspawncar) then
+                cfg.config.SpawnCar = ui.checkspawncar.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -448,8 +538,8 @@ function imgui.OnDrawFrame()
                 imgui.EndPopup()
             end
             
-            if imgui.Checkbox(u8'##sklad', checksklad) then
-                cfg.config.Sklad = checksklad.v
+            if imgui.Checkbox(u8'##sklad', ui.checksklad) then
+                cfg.config.Sklad = ui.checksklad.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -460,8 +550,8 @@ function imgui.OnDrawFrame()
                 imgui.Text(u8'Быстрое открытие складав фракции /sk')
                 imgui.EndPopup()
             end
-            if imgui.Checkbox(u8'##nabor', checknabor) then
-                cfg.config.Nabor = checknabor.v
+            if imgui.Checkbox(u8'##nabor', ui.checknabor) then
+                cfg.config.Nabor = ui.checknabor.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -471,16 +561,16 @@ function imgui.OnDrawFrame()
             if imgui.BeginPopup(u8'nabor') then
                 imgui.Text(u8'Быстрая рассылка о наборе во фракцию при вводе команды /na')
                 imgui.PushItemWidth(130)
-                if imgui.Combo('', ComboNabor, bands) then
-                    cfg.config.NaborBang = ComboNabor.v
+                if imgui.Combo('', ui.ComboNabor, bands) then
+                    cfg.config.NaborBang = ui.ComboNabor.v
                     inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
                 end
                 imgui.EndPopup()
             end
         end
         if menu == 4 then
-            if imgui.Checkbox('##mb', cmdmb) then
-                cfg.config.CmdMb = cmdmb.v
+            if imgui.Checkbox('##mb', ui.cmdmb) then
+                cfg.config.CmdMb = ui.cmdmb.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -491,16 +581,16 @@ function imgui.OnDrawFrame()
                 imgui.Text(u8'Быстрое открытие /members')
                 imgui.EndPopup()
             end
-            if imgui.Checkbox('##de', cmdde) then
-                cfg.config.CmdDe = cmdde.v
+            if imgui.Checkbox('##de', ui.cmdde) then
+                cfg.config.CmdDe = ui.cmdde.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
             imgui.Text(u8'/de') 
             imgui.SameLine()
             imgui.Ques(u8'Быстрое создание дигла /de [Кол-вл]')
-            if imgui.Checkbox('##m4', cmdm4) then
-                cfg.config.CmdM4 = cmdm4.v
+            if imgui.Checkbox('##m4', ui.cmdm4) then
+                cfg.config.CmdM4 = ui.cmdm4.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
@@ -512,27 +602,27 @@ function imgui.OnDrawFrame()
             imgui.Text(u8'Смена темы скрипта')
             imgui.SameLine()
             imgui.PushItemWidth(130)
-            if imgui.Combo('', ComboStyle, styles) then
-               -- apply_style(ComboStyle.v)
-                local i = ComboStyle.v + 1
+            if imgui.Combo('', ui.ComboStyle, styles) then
+               -- apply_style(ui.ComboStyle.v)
+                local i = ui.ComboStyle.v + 1
                 msg('Тема была изменена на '..u8:decode(styles[i]))
-                cfg.config.Styles = ComboStyle.v
+                cfg.config.Styles = ui.ComboStyle.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.Text(u8'Автообновление')
-            if imgui.RadioButton(u8'Включить', radioautoupdate, 1) then
+            if imgui.RadioButton(u8'Включить', ui.radioautoupdate, 1) then
                 cfg.config.AutoUpdate = 1
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.SameLine()
-            if imgui.RadioButton(u8'Выключить', radioautoupdate, 2) then
+            if imgui.RadioButton(u8'Выключить', ui.radioautoupdate, 2) then
                 cfg.config.AutoUpdate = 2
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
             imgui.Text(u8'Команда активации')
             imgui.SameLine()
-            if imgui.InputText('', commandact) then
-                cfg.config.CommandAct = commandact.v
+            if imgui.InputText('', ui.commandact) then
+                cfg.config.CommandAct = ui.commandact.v
                 inicfg.save(cfg,'Amaraythen/Amaraythen.ini')
             end
         end
@@ -557,34 +647,43 @@ function imgui.OnDrawFrame()
         imgui.BeginChild("right_info", imgui.ImVec2(500, 70), false)
         imgui.SetCursorPosY(imgui.GetCursorPosY()+10)
         if imgui.Button(u8'Закрыть меню', imgui.ImVec2(-1, 25)) then
-            window.v = false
+            ui.window.v = false
         end
-        if imgui.Button(u8'Перезагрузить скрипт', imgui.ImVec2(-1, 25)) then lua_thread.create(function() reload = true window.v = false imgui.ShowCursor = false msg('Скрипт был принудительно перезагружен') wait(50) thisScript():reload() end) end
+        if imgui.Button(u8'Перезагрузить скрипт', imgui.ImVec2(-1, 25)) then lua_thread.create(function() reload = true ui.window.v = false imgui.ShowCursor = false msg('Скрипт был принудительно перезагружен') wait(50) thisScript():reload() end) end
         if imgui.Button(u8'Сбросить настройки', imgui.ImVec2(-1, 25)) then 
             msg('Настройки были сборошены до состояние "По умолчанию"')
             os.remove(getWorkingDirectory()..'/config/Amaraythen/Amaraythen.ini')
             msg('Скрипт был принудительно перезагружен') 
-            window.v = true
+            ui.window.v = true
             thisScript():reload()
         end 
         imgui.EndChild()
         imgui.End()
     end
-    if window_v.v then
+    if ui.window_v.v then
         imgui.SetNextWindowPos(imgui.ImVec2(350.0, 250.0), imgui.Cond.FirstUseEver)
-        imgui.Begin(u8'Привет Сучка! :)', window_v,imgui.WindowFlags.AlwaysAutoResize)
+        imgui.Begin(u8'Привет! Проверка доступа', ui.window_v, imgui.WindowFlags.AlwaysAutoResize)
+        
         imgui.BeginChild('##left', imgui.ImVec2(550, 130), true)
-        imgui.TextColoredRGB('Спасибо за пользование {525497}Ghetto Helper')
-        imgui.Text(u8'Автор этого скрипта VRush')
-        imgui.Link("https://www.blast.hk/members/415848/",u8'Мой бластхак')
-        imgui.Link("https://www.blast.hk/threads/138165/",u8'Тема на Blast.hk')
+        imgui.TextColoredRGB('Спасибо за пользование {525497}Amaraythen Helper{FFFFFF} от SAKUTA!')
+        imgui.Link("https://vk.com/hentaikazz",u8'Мой ВК')
+        imgui.Link("https://vk.com/amaraythenerp",u8'Амарайзен во ВКонтакте')
         imgui.TextColoredRGB('{FF0000}В СКРИПТЕ ПРИСУТСТВУЮТ ФУНКЦИИ ЗА КОТОРЫЕ ВЫ МОЖЕТЕ ПОЛУЧИТЬ НАКАЗАНИЕ')
         imgui.TextColoredRGB('{FF0000}ИСПОЛЬЗУЙТЕ НА СВОЙ СТРАХ И РИСК')
         imgui.EndChild()
-        if imgui.Button(u8'Закрыть', imgui.ImVec2(-1, 30)) then window_v.v = false window.v = true end
-        imgui.TextDisabled(u8'Показывать это окно при запуске')
-        imgui.SameLine()
-        if imgui.Checkbox(u8'##ne', nepocaz) then cfg.config.mainwin = nepocaz.v inicfg.save(cfg, 'Amaraythen/Amaraythen.ini') end
+        
+        if imgui.Button(u8'ПРОВЕРКА ДОСТУПА К AMARAYTHEN HELPER!', imgui.ImVec2(-1, 30)) then
+            if checkSerialFromGithub() then
+                msg('Доступ разрешен!')
+                authorized = true
+                ui.window_v.v = false
+                ui.window.v = true
+            else
+                msg('Доступ запрещен! Свяжитесь с SAKUTA для получения доступа.')
+                thisScript():unload()
+            end
+        end
+
         imgui.End()
     end
 end
@@ -687,17 +786,25 @@ function main()
         
         sampRegisterChatCommand('gh', function()
             if cfg.config.mainwin then
-                window_v.v = true
+                if authorized then
+                    ui.window.v = not ui.window.v
+                else
+                    ui.window_v.v = true
+                end
             else
-                window.v = not window.v
+                ui.window.v = not ui.window.v
             end
         end)
 
         sampRegisterChatCommand(cfg.config.CommandAct, function()
             if cfg.config.mainwin then
-                window_v.v = true
+                if authorized then
+                    ui.window.v = not ui.window.v
+                else
+                    ui.window_v.v = true
+                end
             else
-                window.v = not window.v
+                ui.window.v = not ui.window.v
             end
         end)
 
@@ -744,7 +851,7 @@ function main()
         sampRegisterChatCommand("na", function(arg)
             if cfg.config.Nabor then
                 lua_thread.create(function()
-                    local g = ComboNabor.v + 1
+                    local g = ui.ComboNabor.v + 1
                     msg('Проходит набор в '..bands[g]..  ' Всех ждем на респе!')
                     printStringNow('Nabor', 6000)
                     sampSendChat('/fam Проходит набор в '..bands[g]..  ' Всех ждем на респе!')
@@ -833,7 +940,7 @@ function main()
         local rX, rY = getScreenResolution()
     while true do
         wait(0)
-        imgui.Process = window.v or window_v.v
+        imgui.Process = ui.window.v or ui.window_v.v
         if cfg.config.SbivBind then
             if isKeyJustPressed(cfg.config.SbivKey) and not sampIsCursorActive() then
                 sampSendChat(u8:decode(cfg.config.TextSbiv))
@@ -861,7 +968,7 @@ function main()
                 wait(1000)
                 sampSendChat('/invite '..playerid)
                 invite = true
-                msg('Вы приняли игрока с ником: '..name..'  Ранг: '..invrank.v)
+                msg('Вы приняли игрока с ником: '..name..'  Ранг: '..ui.invrank.v)
             end
         end
         if changestatspos then
@@ -875,7 +982,7 @@ function main()
             changecheckonlinepos = false
             sampToggleCursor(false)
             msg('Позиция сохранена.')
-            window.v = true
+            ui.window.v = true
         end
         if changecheckonlinepos then
             sampToggleCursor(true)
@@ -888,7 +995,7 @@ function main()
             changestatspos = false
             sampToggleCursor(false)
             msg('Позиция сохранена.')
-            window.v = true
+            ui.window.v = true
         end
     end
 end
@@ -941,8 +1048,8 @@ end
 
 function sampev.onShowDialog(id, style, title, button1, button2, text)
     if invite and id == 25640 then
-        sampSendDialogResponse(id, 1 , invrank.v - 1, 0)
-        msg('Вы приняли игрока с ником: '..name..'  Ранг: '..invrank.v)
+        sampSendDialogResponse(id, 1 , ui.invrank.v - 1, 0)
+        msg('Вы приняли игрока с ником: '..name..'  Ранг: '..ui.invrank.v)
         invite = false
         return false
     end
@@ -954,10 +1061,10 @@ function sampev.onShowDialog(id, style, title, button1, button2, text)
 end
 
 function sampev.onSendGiveDamage(playerId,damage)
-	if cfg.config.Bell then
-		local audio = loadAudioStream('moonloader/config/Ghetto Helper/bell.wav')
-		setAudioStreamState(audio, 1)
-	end
+    if cfg.config.Bell then
+        local audio = loadAudioStream('moonloader/config/Ghetto Helper/bell.wav')
+        setAudioStreamState(audio, 1)
+    end
     if cfg.config.Stats then
         dmg = tonumber(damage)
         dmg = math.floor(dmg)
@@ -1066,7 +1173,7 @@ function onlineupdate()
 end
 
 function msg(arg)
-    sampAddChatMessage('{FFFFFF}[{5d2d89}Ghetto Helper{FFFFFF}]{5d2d89}: {FFFFFF}'..arg, -1)
+    sampAddChatMessage('{FFFFFF}[{5d2d89}Amaraythen Helper{FFFFFF}]{5d2d89}: {FFFFFF}'..arg, -1)
 end
 
 function imgui.Ques(text)
